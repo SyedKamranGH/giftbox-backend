@@ -1,12 +1,95 @@
-node_modules/
+# -----------------------------------
+# Go Build & Binary Artifacts
+# -----------------------------------
+/bin/
+/build/
+/dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+
+# Skip Go build output
+*.out
+
+# Go workspace file
+go.work
+
+# -----------------------------------
+# Go Modules
+# -----------------------------------
+# Exclude module download cache
+/pkg/mod/
+/pkg/sumdb/
+
+# -----------------------------------
+# Logs
+# -----------------------------------
+*.log
+logs/
+debug.log
+error.log
+
+# -----------------------------------
+# Temporary Files & Cache
+# -----------------------------------
+*.tmp
+*.temp
+*.cache
+.cache/
+tmp/
+temp/
+*.swp
+*.swo
+
+# -----------------------------------
+# Environment / Secrets
+# -----------------------------------
 .env
-.env.local
-.DS_Store
-dist/
-coverage/
+.env.*
+!.env.example
+
+# -----------------------------------
+# Swagger / Documentation Generated Files
+# -----------------------------------
+/api/docs/*
+
+# Do NOT ignore the folder, only generated content
+!/api/docs/.keep
+
+# -----------------------------------
+# Docker
+# -----------------------------------
+/docker-data/
+*.pid
+docker-compose.override.yml
+
+# -----------------------------------
+# PostgreSQL Local Data (if mounted)
+# -----------------------------------
+/pgdata/
+/postgres-data/
+/data/
+
+# -----------------------------------
+# Migration Tools
+# -----------------------------------
+migrate.lock
+
+# -----------------------------------
+# Build Metadata
+# -----------------------------------
+.coverage
+coverage.*
+*.prof
+*.cov
+
+# -----------------------------------
+# Node-related (if any admin dashboards exist inside repo)
+# -----------------------------------
+node_modules/
 npm-debug.log
+yarn-debug.log
 yarn-error.log
-sequelizerc
-*.sqlite
-.idea/
-.vscode/
