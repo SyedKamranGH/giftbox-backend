@@ -1,0 +1,21 @@
+{
+    "dbcode.connections": [
+        {
+            "connectionId": "bwIy6kLElASfoW1xL1uiR",
+            "name": "GiftBox_DB",
+            "driver": "postgres",
+            "color": "#F999A3",
+            "connectionType": "host",
+            "host": "localhost",
+            "port": 5432,
+            "ssl": false,
+            "username": "giftbox_user",
+            "password": "",
+            "savePassword": "secretStorage",
+            "database": "giftbox_db",
+            "readOnly": false,
+            "postConnectionSqlType": "inline",
+            "connectionTimeout": 30
+        }
+    ]
+}
