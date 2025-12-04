@@ -8,39 +8,30 @@
 
 ## 🚨 CRITICAL ISSUES FOUND
 
-### ❌ Issue #1: DUPLICATE TAG STORAGE (HIGH PRIORITY)
+### ✅ Issue #1: DUPLICATE TAG STORAGE - **FIXED**
+
+**Status:** ✅ **RESOLVED** (December 4, 2025)
 
 **Location:** `gifts` table (Migration 000004)
 
-**Problem:**
+**Problem (Original):**
+The gifts table had a redundant `tags TEXT[]` array field that duplicated the normalized `tags` and `gift_tags` junction tables.
 
-```sql
--- In gifts table (line 38):
-tags TEXT[],  -- Array field storing tags
+**Solution Applied:**
 
--- But we also have (Migration 000007):
-CREATE TABLE tags (...);
-CREATE TABLE gift_tags (...);  -- Junction table for many-to-many relationship
-```
+- ✅ Removed `tags TEXT[]` field from migration 000004
+- ✅ Removed `idx_gifts_tags` GIN index
+- ✅ Kept only the normalized `gift_tags` junction table approach
 
-**Impact:**
+**Files Modified:**
 
-- **Data Redundancy:** Tags are stored in TWO places
-- **Data Inconsistency:** Updates to `gift_tags` won't sync with `gifts.tags` array
-- **Normalization Violation:** Breaks 3NF (Third Normal Form)
-- **Query Confusion:** Developers won't know which source is authoritative
-- **Storage Waste:** Duplicate data increases database size
-- **Maintenance Nightmare:** Must update both locations
+- `migrations/000004_create_gifts_table.up.sql` - Removed lines 38 and 57
 
-**Recommendation:** 🔧 **REMOVE `tags TEXT[]` from gifts table**
+**Result:**
 
-```sql
--- Remove this line from 000004_create_gifts_table.up.sql:
-tags TEXT[],  -- DELETE THIS
-
--- Keep only the normalized approach:
--- tags table + gift_tags junction table
-```
+- ✅ Proper 3NF compliance
+- ✅ No data redundancy
+- ✅ Single source of truth for tags
 
 ---
 
@@ -49,7 +40,6 @@ tags TEXT[],  -- DELETE THIS
 **Location:** Multiple tables
 
 **Problem:** Several aggregate counters are stored directly in tables:
-
 
 #### A. `gifts` table
 
@@ -173,43 +163,36 @@ shipping_address_id UUID REFERENCES user_addresses(id) ON DELETE SET NULL,
 
 ---
 
-### ⚠️ Issue #4: MISSING FOREIGN KEY VALIDATION
+### ✅ Issue #4: MISSING FOREIGN KEY VALIDATION - **FIXED**
+
+**Status:** ✅ **RESOLVED** (December 4, 2025)
 
 **Location:** `coupons` table (Migration 000018)
 
-**Problem:**
+**Problem (Original):**
+The coupons table used UUID array fields without foreign key constraints, violating referential integrity.
 
-```sql
-applicable_category_ids UUID[],  -- No FK constraint!
-applicable_gift_ids UUID[],      -- No FK constraint!
-```
+**Solution Applied:**
 
-**Impact:**
+- ✅ Removed `applicable_category_ids UUID[]` from migration 000018
+- ✅ Removed `applicable_gift_ids UUID[]` from migration 000018
+- ✅ Created migration 000024 with proper junction tables:
+  - `coupon_categories` table with FK constraints
+  - `coupon_gifts` table with FK constraints
 
-- **Referential Integrity:** Can reference non-existent categories/gifts
-- **Orphaned References:** If category/gift is deleted, coupon still references it
-- **No CASCADE:** Can't auto-update when referenced items change
+**Files Modified:**
 
-**Recommendation:** 🔧 **CREATE JUNCTION TABLES**
+- `migrations/000018_create_coupons_table.up.sql` - Removed array fields
+- `migrations/000024_create_coupon_junction_tables.up.sql` - Created junction tables
+- `migrations/000024_create_coupon_junction_tables.down.sql` - Rollback support
 
-```sql
--- Replace arrays with proper junction tables:
-CREATE TABLE coupon_categories (
-    coupon_id UUID NOT NULL REFERENCES coupons(id) ON DELETE CASCADE,
-    category_id UUID NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
-    PRIMARY KEY (coupon_id, category_id)
-);
+**Result:**
 
-CREATE TABLE coupon_gifts (
-    coupon_id UUID NOT NULL REFERENCES coupons(id) ON DELETE CASCADE,
-    gift_id UUID NOT NULL REFERENCES gifts(id) ON DELETE CASCADE,
-    PRIMARY KEY (coupon_id, gift_id)
-);
+- ✅ Full referential integrity enforced by database
 
--- Remove from coupons table:
--- applicable_category_ids UUID[],
--- applicable_gift_ids UUID[],
-```
+- ✅ Proper CASCADE delete behavior
+- ✅ Better query performance with standard JOINs
+- ✅ Composite primary keys prevent duplicates
 
 ---
 
@@ -266,30 +249,30 @@ CREATE INDEX idx_gift_images_sort_order ON gift_images(sort_order);  -- Probably
 
 ---
 
-### ⚠️ Issue #7: MISSING COUPON VALIDATION
+### ✅ Issue #7: MISSING COUPON VALIDATION - **FIXED**
+
+**Status:** ✅ **RESOLVED** (December 4, 2025)
 
 **Location:** `orders` table
 
-**Problem:** No reference to which coupon was used (if any)
+**Problem (Original):**
+The orders table had no direct reference to which coupon was used, requiring complex JOINs through `coupon_usage` table.
 
-```sql
--- orders table has:
-discount_amount DECIMAL(10, 2),  -- But no coupon_id!
+**Solution Applied:**
 
--- coupon_usage table exists but isn't linked from orders
-```
+- ✅ Added `coupon_id UUID` field to orders table
+- ✅ Added FK constraint: `REFERENCES coupons(id) ON DELETE SET NULL`
+- ✅ Added index `idx_orders_coupon_id` for efficient queries
 
-**Impact:**
+**Files Modified:**
 
-- Can't easily see which coupon was applied to an order
-- Must JOIN through coupon_usage to find coupon
+- `migrations/000010_create_orders_table.up.sql` - Added coupon_id field and index
 
-**Recommendation:** 🔧 **ADD OPTIONAL COUPON REFERENCE**
+**Result:**
 
-```sql
--- Add to orders table:
-coupon_id UUID REFERENCES coupons(id) ON DELETE SET NULL,
-```
+- ✅ Direct coupon reference in orders table
+- ✅ Easier queries to find which coupon was applied
+- ✅ Optional field (nullable) - orders without coupons still work
 
 ---
 
@@ -329,7 +312,7 @@ coupon_id UUID REFERENCES coupons(id) ON DELETE SET NULL,
         │  - seller_id (FK → users)                          │
         │  - category_id (FK → categories)                   │
         │  - title, price, stock_quantity                    │
-        │  - tags TEXT[] ⚠️ ISSUE: Duplicates gift_tags     │
+        │  ✅ Uses gift_tags junction table for tags        │
         └───┬───────┬──────────┬──────────┬─────────────────┘
             │       │          │          │
             ▼       ▼          ▼          ▼
@@ -339,7 +322,7 @@ coupon_id UUID REFERENCES coupons(id) ON DELETE SET NULL,
      │          │ │        │ │GIFT_   │ │             │
      │          │ │        │ │TAGS    │ │             │
      └──────────┘ └────────┘ └────────┘ └─────────────┘
-                              ⚠️ ISSUE
+                              ✅ FIXED
 
 ┌────────────────────────────────────────────────────────────┐
 │                    CATEGORIES (Hierarchy)                   │
@@ -351,9 +334,10 @@ coupon_id UUID REFERENCES coupons(id) ON DELETE SET NULL,
 ┌────────────────────────────────────────────────────────────┐
 │                    COUPONS & USAGE                          │
 │  coupons                                                    │
-│  - applicable_category_ids UUID[] ⚠️ No FK constraint      │
-│  - applicable_gift_ids UUID[] ⚠️ No FK constraint          │
+│  - applicable_to_all_products BOOLEAN                       │
 │       │                                                     │
+│       ├──→ coupon_categories (junction) ✅ With FK         │
+│       ├──→ coupon_gifts (junction) ✅ With FK              │
 │       └──→ coupon_usage (tracks redemptions)               │
 └─────────────────────────────────────────────────────────────┘
 
@@ -431,8 +415,10 @@ coupon_id UUID REFERENCES coupons(id) ON DELETE SET NULL,
 | coupons | coupon_usage | 1:N | CASCADE | Redemption tracking |
 | coupon_usage | users | N:1 | CASCADE | Who used it |
 | coupon_usage | orders | N:1 | CASCADE | Which order |
-| coupons | categories | ❌ NONE | - | ⚠️ Array field, no FK |
-| coupons | gifts | ❌ NONE | - | ⚠️ Array field, no FK |
+| coupons | coupon_categories | 1:N | CASCADE | ✅ Via junction table |
+| coupon_categories | categories | N:1 | CASCADE | Category applicability |
+| coupons | coupon_gifts | 1:N | CASCADE | ✅ Via junction table |
+| coupon_gifts | gifts | N:1 | CASCADE | Product applicability |
 
 ### 6. WISHLIST RELATIONSHIPS
 
@@ -455,17 +441,17 @@ coupon_id UUID REFERENCES coupons(id) ON DELETE SET NULL,
 
 ### Third Normal Form (3NF) Violations
 
-| Table | Violation | Severity | Action |
+| Table | Violation | Severity | Status |
 |-------|-----------|----------|--------|
-| **gifts** | `tags TEXT[]` duplicates `gift_tags` table | 🔴 HIGH | **REMOVE** array field |
+| **gifts** | `tags TEXT[]` duplicates `gift_tags` table | 🔴 HIGH | ✅ **FIXED** |
 | **gifts** | Denormalized counters (view_count, sales_count, etc.) | 🟡 MEDIUM | **KEEP** (performance) + add triggers |
 | **reviews** | Denormalized counters (helpful_count, unhelpful_count) | 🟡 MEDIUM | **KEEP** (performance) + add triggers |
 | **coupons** | `used_count` duplicates `coupon_usage` | 🟡 MEDIUM | **KEEP** (performance) + add triggers |
-| **coupons** | Array fields without FK constraints | 🟠 MEDIUM-HIGH | **REPLACE** with junction tables |
+| **coupons** | Array fields without FK constraints | 🟠 MEDIUM-HIGH | ✅ **FIXED** |
 | **orders** | Denormalized address fields | 🟢 LOW | **KEEP** (snapshot pattern) |
 | **seller_profiles** | Denormalized metrics | 🟡 MEDIUM | **KEEP** (performance) + add triggers |
 
-### Normalization Score: 7.5/10
+### Normalization Score: 9/10 ⬆️ (Improved from 7.5/10)
 
 **Strengths:**
 
@@ -474,59 +460,63 @@ coupon_id UUID REFERENCES coupons(id) ON DELETE SET NULL,
 - ✅ Atomic values in most columns
 - ✅ Proper foreign key constraints (mostly)
 
-**Weaknesses:**
+**Resolved Issues:**
 
-- ❌ Duplicate tag storage (critical issue)
-- ❌ Array fields without FK validation
-- ⚠️ Extensive denormalization (acceptable for performance)
+- ✅ Duplicate tag storage - **FIXED**
+- ✅ Array fields without FK validation - **FIXED**
+
+**Remaining:**
+
+- ⚠️ Extensive denormalization (acceptable for performance - requires triggers)
 
 ---
 
 ## 🎯 PRIORITY FIXES
 
-### 🔴 CRITICAL (Fix Immediately)
+### ✅ COMPLETED FIXES
 
-1. **Remove `tags TEXT[]` from gifts table**
-   - Migration: 000004
-   - Keep only `gift_tags` junction table
-   - Estimated time: 15 minutes
+1. **✅ Removed `tags TEXT[]` from gifts table**
+   - Migration: 000004 (modified)
+   - Status: Complete
+   - Result: Proper 3NF compliance
+
+2. **✅ Replaced coupon array fields with junction tables**
+   - Migration: 000018 (modified) + 000024 (new)
+   - Created `coupon_categories` and `coupon_gifts` tables
+   - Status: Complete
+   - Result: Full referential integrity
 
 ### 🟠 HIGH (Fix Soon)
 
-2. **Replace coupon array fields with junction tables**
-   - Migration: 000018
-   - Create `coupon_categories` and `coupon_gifts` tables
-   - Estimated time: 30 minutes
-
-3. **Add missing composite indexes**
+1. **Add missing composite indexes**
    - For common query patterns
    - Estimated time: 20 minutes
 
 ### 🟡 MEDIUM (Plan for Next Sprint)
 
-4. **Add database triggers for denormalized counters**
+2. **Add database triggers for denormalized counters**
    - Gifts: view_count, sales_count, review_count, average_rating
    - Reviews: helpful_count, unhelpful_count
    - Coupons: used_count
    - Seller_profiles: metrics
    - Estimated time: 2-3 hours
 
-5. **Add soft delete to missing tables**
+3. **Add soft delete to missing tables**
    - user_addresses, orders, wishlists, seller_profiles
    - Estimated time: 1 hour
 
-6. **Add coupon_id to orders table**
+4. **Add coupon_id to orders table**
    - For easier coupon tracking
    - Estimated time: 15 minutes
 
 ### 🟢 LOW (Nice to Have)
 
-7. **Review and optimize indexes**
+5. **Review and optimize indexes**
    - Remove unused indexes
    - Add missing indexes based on query patterns
    - Estimated time: 1 hour
 
-8. **Add reconciliation jobs**
+6. **Add reconciliation jobs**
    - Periodic jobs to verify denormalized counters
    - Estimated time: 2-3 hours
 
@@ -597,35 +587,38 @@ coupon_id UUID REFERENCES coupons(id) ON DELETE SET NULL,
 
 ## 📝 SUMMARY
 
-### Overall Assessment: **8/10** ⭐⭐⭐⭐⭐⭐⭐⭐
+### Overall Assessment: **9/10** ⭐⭐⭐⭐⭐⭐⭐⭐⭐ (Improved from 8/10)
 
 **Strengths:**
 
-- Well-designed schema with proper normalization
-- Comprehensive feature coverage
-- Good use of PostgreSQL features
-- Thoughtful cascade rules and constraints
+- ✅ Well-designed schema with proper normalization
+- ✅ Comprehensive feature coverage
+- ✅ Good use of PostgreSQL features
+- ✅ Thoughtful cascade rules and constraints
+- ✅ **All critical issues resolved**
 
-**Critical Issues:**
+**Completed Fixes:**
 
-- 1 critical redundancy (tags array vs gift_tags table)
-- 1 high-priority issue (coupon array fields)
+- ✅ Removed duplicate tag storage (Issue #1)
+- ✅ Replaced coupon array fields with junction tables (Issue #2)
+- ✅ Full referential integrity now enforced
+- ✅ Proper 3NF compliance achieved
 
-**Recommendations:**
+**Remaining Recommendations:**
 
-1. Fix the tags duplication immediately
-2. Replace coupon arrays with junction tables
-3. Add triggers for denormalized counters
-4. Add soft deletes to remaining tables
-5. Monitor and optimize indexes based on actual query patterns
+1. Add triggers for denormalized counters
+2. Add soft deletes to remaining tables
+3. Add composite indexes for common query patterns
+4. Monitor and optimize indexes based on actual query patterns
 
-**Estimated Fix Time:** 4-6 hours for all priority fixes
+**Estimated Time for Remaining Fixes:** 3-4 hours
 
 ---
 
 **Next Steps:**
 
-1. Review this analysis with the team
-2. Create migration files for fixes
-3. Test migrations on development database
-4. Deploy fixes to production
+1. ✅ ~~Fix critical issues~~ **COMPLETE**
+2. Test migrations on development database
+3. Add database triggers for denormalized counters
+4. Add soft deletes to remaining tables
+5. Deploy to production when ready
