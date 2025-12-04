@@ -35,7 +35,6 @@ CREATE TABLE gifts (
     meta_description TEXT,
     meta_keywords TEXT,
     published_at TIMESTAMP WITH TIME ZONE,
-    tags TEXT[],
     brand VARCHAR(100),
     warranty_info TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -54,7 +53,6 @@ CREATE INDEX idx_gifts_created_at ON gifts(created_at);
 CREATE INDEX idx_gifts_deleted_at ON gifts(deleted_at);
 CREATE INDEX idx_gifts_sku ON gifts(sku);
 CREATE INDEX idx_gifts_published_at ON gifts(published_at);
-CREATE INDEX idx_gifts_tags ON gifts USING GIN(tags);
 CREATE INDEX idx_gifts_brand ON gifts(brand);
 
 -- Function to auto-update gift status based on stock quantity
