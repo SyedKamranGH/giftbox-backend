@@ -41,8 +41,8 @@ CREATE TABLE orders (
     order_status order_status DEFAULT 'pending',
     payment_status payment_status DEFAULT 'pending',
     payment_method payment_method,
-    -- Coupon applied (optional)
-    coupon_id UUID REFERENCES coupons (id) ON DELETE SET NULL,
+    -- Coupon applied (optional) - FK constraint added in later migration
+    coupon_id UUID,
     -- Shipping information
     shipping_full_name VARCHAR(255),
     shipping_phone VARCHAR(20),
