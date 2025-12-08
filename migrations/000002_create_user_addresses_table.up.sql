@@ -1,10 +1,9 @@
 -- migrations/000002_create_user_addresses_table.up.sql
-
 CREATE TYPE address_type AS ENUM ('shipping', 'billing', 'both');
 
 CREATE TABLE user_addresses (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+    user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     address_type address_type NOT NULL DEFAULT 'shipping',
     full_name VARCHAR(255) NOT NULL,
     phone VARCHAR(20) NOT NULL,
@@ -15,12 +14,23 @@ CREATE TABLE user_addresses (
     zip_code VARCHAR(20) NOT NULL,
     country VARCHAR(100) NOT NULL DEFAULT 'USA',
     is_default BOOLEAN DEFAULT false,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP
+    WITH
+        TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP
+    WITH
+        TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_user_addresses_user_id ON user_addresses(user_id);
-CREATE INDEX idx_user_addresses_is_default ON user_addresses(is_default);
+CREATE INDEX idx_user_addresses_user_id ON user_addresses (user_id);
 
-CREATE TRIGGER update_user_addresses_updated_at BEFORE UPDATE ON user_addresses
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE INDEX idx_user_addresses_user_default ON user_addresses (user_id, is_default)
+WHERE
+    is_default = true;
+
+CREATE UNIQUE INDEX idx_user_addresses_one_default ON user_addresses (user_id, address_type)
+WHERE
+    is_default = true;
+
+CREATE TRIGGER update_user_addresses_updated_at BEFORE
+UPDATE ON user_addresses FOR EACH ROW EXECUTE FUNCTION update_updated_at_column ();

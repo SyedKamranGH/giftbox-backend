@@ -51,7 +51,6 @@ CREATE INDEX idx_gifts_is_featured ON gifts(is_featured);
 CREATE INDEX idx_gifts_average_rating ON gifts(average_rating);
 CREATE INDEX idx_gifts_created_at ON gifts(created_at);
 CREATE INDEX idx_gifts_deleted_at ON gifts(deleted_at);
-CREATE INDEX idx_gifts_sku ON gifts(sku);
 CREATE INDEX idx_gifts_published_at ON gifts(published_at);
 CREATE INDEX idx_gifts_brand ON gifts(brand);
 

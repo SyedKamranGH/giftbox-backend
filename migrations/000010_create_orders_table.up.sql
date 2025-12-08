@@ -44,7 +44,6 @@ CREATE TABLE orders (
     -- Coupon applied (optional)
     coupon_id UUID REFERENCES coupons (id) ON DELETE SET NULL,
     -- Shipping information
-    shipping_address_id UUID REFERENCES user_addresses (id),
     shipping_full_name VARCHAR(255),
     shipping_phone VARCHAR(20),
     shipping_street_address_1 VARCHAR(500),
@@ -54,7 +53,6 @@ CREATE TABLE orders (
     shipping_zip_code VARCHAR(20),
     shipping_country VARCHAR(100),
     -- Billing information
-    billing_address_id UUID REFERENCES user_addresses (id),
     billing_full_name VARCHAR(255),
     billing_street_address_1 VARCHAR(500),
     billing_street_address_2 VARCHAR(500),
@@ -103,6 +101,8 @@ CREATE INDEX idx_orders_payment_status ON orders (payment_status);
 CREATE INDEX idx_orders_coupon_id ON orders (coupon_id);
 
 CREATE INDEX idx_orders_created_at ON orders (created_at);
+
+CREATE INDEX idx_orders_status_created_at ON orders (order_status, created_at DESC);
 
 CREATE TRIGGER update_orders_updated_at BEFORE
 UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION update_updated_at_column ();
