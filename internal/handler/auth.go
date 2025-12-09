@@ -17,10 +17,6 @@ type LoginResponse struct {
 	Token string `json:"token"`
 }
 
-type ErrorResponse struct {
-	Error string `json:"error"`
-}
-
 // Login godoc
 // @Summary      Login user
 // @Description  Authenticate user with email and password
@@ -29,13 +25,13 @@ type ErrorResponse struct {
 // @Produce      json
 // @Param        request body LoginRequest true "Login credentials"
 // @Success      200 {object} LoginResponse
-// @Failure      400 {object} ErrorResponse
-// @Failure      401 {object} ErrorResponse
+// @Failure      400 {object} Response
+// @Failure      401 {object} Response
 // @Router       /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		BadRequestResponse(c, err.Error())
 		return
 	}
 
@@ -45,5 +41,5 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "Invalid credentials"})
+	UnauthorizedResponse(c, "Invalid credentials")
 }
